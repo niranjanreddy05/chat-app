@@ -9,16 +9,19 @@ import { faUser, faLock } from '@fortawesome/free-solid-svg-icons';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { useSocket } from '../components/SocketProvider';
+import { useActionData, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 
 export const action = async ({ request }) => {
   try {
     const formData = await request.formData();
     const data = Object.fromEntries(formData);
-    await axios.post('http://localhost:5100/api/auth/login', data, {
+    const response = await axios.post('http://localhost:5100/api/auth/login', data, {
       withCredentials: true
     })
-    toast.success('Logged in successfully')
-    return redirect('/chat');
+    const user = response.data;
+    return { user };
   } catch (error) {
     console.log(error);
     toast.error(error?.response?.data?.msg);
@@ -27,6 +30,20 @@ export const action = async ({ request }) => {
 }
 
 const Login = () => {
+  const { socket, isConnected } = useSocket();
+  const actionData = useActionData();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    console.log(actionData?.user)
+    if (actionData?.user && isConnected) {
+      toast.success('Successfully Logged In');
+      localStorage.setItem('userId', actionData.user._id)
+      socket.emit('login', actionData.user._id);
+      navigate('/chat');
+    }
+  }, [actionData, navigate, isConnected]);
+
   return (
     <Container className="d-flex justify-content-center align-items-center vh-100">
       <RouterForm className="p-4 rounded shadow-lg" style={{ maxWidth: '400px', width: '100%' }} method="POST">

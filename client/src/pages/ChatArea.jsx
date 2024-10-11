@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -9,15 +9,15 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPaperPlane } from '@fortawesome/free-solid-svg-icons';
 import { useLoaderData } from 'react-router-dom';
 import axios from 'axios';
+import { useSocket } from '../components/SocketProvider';
 
 
 export const loader = async ({ params }) => {
   try {
     const { id } = params;
-    const {data} = await axios.get(`http://localhost:5100/api/users/single-user/${id}`, {
+    const { data } = await axios.get(`http://localhost:5100/api/users/single-user/${id}`, {
       withCredentials: true
     })
-    console.log(data);
     return data
   }
   catch (error) {
@@ -28,7 +28,53 @@ export const loader = async ({ params }) => {
 }
 
 const ChatArea = () => {
-  const user = useLoaderData(); // Get the user data
+  const user = useLoaderData();
+  const { socket } = useSocket();
+  const [msgFormData, setMsgFormData] = useState({ message: '' });
+  useEffect(() => {
+    socket.on('receive-message', async (msg, socketId) => {
+      const userId = await axios.post(`http://localhost:5100/api/users/get-user-id`, { id: socketId }, {
+        withCredentials: true
+      });
+      if (user._id === userId.data) {
+        setMsg(prevData => {
+          return [...prevData, msg]
+        })
+      }
+    })
+    return () => {
+      socket.off('receive-message')
+    }
+  },[user]);
+
+  useEffect(() => {
+    const userId = localStorage.getItem('userId');
+    socket.emit('login', userId);
+  }, []);
+
+  useEffect(() => {
+    // Clear messages when user changes
+    setMsg([]);
+  }, [user._id]);
+
+  const [msg, setMsg] = useState([]);
+
+  function updateMsgForm(e) {
+    setMsgFormData(prevData => {
+      return { ...prevData, [e.target.name]: e.target.value }
+    })
+  }
+
+  function sendMsg(e) {
+    e.preventDefault();
+    if (msgFormData.message === '') return;
+    setMsg(prevData => {
+      return [...prevData, msgFormData.message]
+    })
+    console.log(user._id);
+    socket.emit('send-message', msgFormData.message, user._id);
+    setMsgFormData({ message: '' });
+  }
 
   return (
     <Container fluid className="d-flex flex-column vh-100 p-0">
@@ -44,8 +90,13 @@ const ChatArea = () => {
         <Col className="d-flex flex-column justify-content-end">
 
           <div className="text-center text-muted">
-            {/* Messages or something can be added here */}
-            <p>No messages yet...</p>
+            {msg.length === 0 ?
+              <p>No messages yet...</p>
+              :
+              msg.map((m, i) => {
+                return <div key={i}>{m}</div>
+              })
+            }
           </div>
         </Col>
       </Row>
@@ -59,8 +110,11 @@ const ChatArea = () => {
               placeholder="Type a message"
               aria-label="Type a message"
               style={{ borderRadius: '25px', marginRight: '10px' }}
+              onChange={(e) => updateMsgForm(e)}
+              name="message"
+              value={msgFormData.message}
             />
-            <Button variant="primary" style={{ borderRadius: '25px' }}>
+            <Button variant="primary" style={{ borderRadius: '25px' }} onClick={(e) => sendMsg(e)}>
               <FontAwesomeIcon icon={faPaperPlane} />
             </Button>
           </InputGroup>

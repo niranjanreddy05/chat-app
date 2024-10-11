@@ -25,7 +25,6 @@ export const loader = async () => {
 
 const ChatLayout = () => {
   const data = useLoaderData();
-
   return (
     <Container fluid className="vh-100 p-0">
       <Row className="h-100 m-0">

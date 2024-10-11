@@ -17,3 +17,10 @@ export const singleUser = async (req, res) => {
   }
   res.status(StatusCodes.OK).json(user);
 }
+
+export const getUserIdFromSocketId = async (req, res) => {
+  const { id } = req.body;
+  const user = await User.findOne({ socketId: id });
+  const userId = user._id;
+  res.status(StatusCodes.OK).json(userId);
+}

@@ -10,6 +10,7 @@ import cors from 'cors';
 import { StatusCodes } from 'http-status-codes';
 import authRouter from './routers/authRouter.js'
 import userRouter from './routers/userRouter.js';
+import User from './models/UserModel.js';
 
 
 const app = express();
@@ -24,7 +25,15 @@ app.use(express.json());
 app.use(cookieParser());
 
 io.on('connection', (socket) => {
-  console.log(socket.id);
+  socket.on('login', async (userId) => {
+    const user = await User.findById(userId);
+    user.socketId = socket.id;
+    await user.save();
+  })
+  socket.on('send-message', async (msg, userId) => {
+    const user = await User.findById(userId);
+    socket.to(user.socketId).emit('receive-message', msg, socket.id);
+  })
 })
 
 app.use('/api/auth', authRouter)
