@@ -10,7 +10,10 @@ import cors from 'cors';
 import { StatusCodes } from 'http-status-codes';
 import authRouter from './routers/authRouter.js'
 import userRouter from './routers/userRouter.js';
+import messageRouter from './routers/messageRouter.js';
 import User from './models/UserModel.js';
+import Message from './models/MessageModel.js';
+import { NotFoundError } from './errors/CustomErrors.js';
 
 
 const app = express();
@@ -26,18 +29,30 @@ app.use(cookieParser());
 
 io.on('connection', (socket) => {
   socket.on('login', async (userId) => {
+    try{
     const user = await User.findById(userId);
     user.socketId = socket.id;
     await user.save();
+    } catch (error) {
+      throw new NotFoundError('User not found');
+    }
   })
   socket.on('send-message', async (msg, userId) => {
     const user = await User.findById(userId);
+    const sender = await User.findOne({ socketId: socket.id });
+    const message = new Message({
+      receiver: user._id,
+      sender: sender._id,
+      message: msg
+    })
+    await message.save();
     socket.to(user.socketId).emit('receive-message', msg, socket.id);
   })
 })
 
 app.use('/api/auth', authRouter)
 app.use('/api/users', userRouter);
+app.use('/api/messages', messageRouter);
 
 app.use('*', (req, res) => {
   res.status(404).json({ msg: 'route not found' })
