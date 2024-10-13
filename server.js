@@ -29,24 +29,40 @@ app.use(cookieParser());
 
 io.on('connection', (socket) => {
   socket.on('login', async (userId) => {
-    try{
-    const user = await User.findById(userId);
-    user.socketId = socket.id;
-    await user.save();
+    try {
+      const user = await User.findById(userId);
+      user.socketId = socket.id;
+      await user.save();
     } catch (error) {
       throw new NotFoundError('User not found');
     }
   })
   socket.on('send-message', async (msg, userId) => {
+    try {
+      const user = await User.findById(userId);
+      const sender = await User.findOne({ socketId: socket.id });
+      const message = new Message({
+        receiver: user._id,
+        sender: sender._id,
+        message: msg,
+        read: false
+      })
+      const result = await message.save();
+      socket.to(user.socketId).emit('receive-message', msg, result._id, socket.id);
+    } catch (error) {
+      console.log(error);
+    }
+  })
+
+  socket.on('message-read', async (msgId) => {
+    await Message.findByIdAndUpdate(msgId, { read: true });
+  })
+
+  socket.on('message-sent', async (userId) => {
     const user = await User.findById(userId);
-    const sender = await User.findOne({ socketId: socket.id });
-    const message = new Message({
-      receiver: user._id,
-      sender: sender._id,
-      message: msg
-    })
-    await message.save();
-    socket.to(user.socketId).emit('receive-message', msg, socket.id);
+    console.log(user);
+    const socketId = user.socketId;
+    socket.to(socketId).emit('message-received', socket.id);
   })
 })
 

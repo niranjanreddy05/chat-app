@@ -34,12 +34,13 @@ const ChatArea = () => {
   const [msg, setMsg] = useState([]);
 
   useEffect(() => {
-    socket.on('receive-message', async (msg, socketId) => {
+    socket.on('receive-message', async (msg, msgId, socketId) => {
       const userId = await axios.post(`http://localhost:5100/api/users/get-user-id`, { id: socketId }, {
         withCredentials: true
       });
       if (user._id === userId.data) {
         setMsg(prevData => {
+          socket.emit('message-read', msgId);
           return [...prevData, { text: msg, sender: false }]; // Received message
         });
       }
@@ -63,6 +64,7 @@ const ChatArea = () => {
           });
         } else {
           setMsg(prevData => {
+            socket.emit('message-read', msg._id);
             return [...prevData, { text: msg.message, sender: false }]; 
           });
         }
@@ -96,6 +98,7 @@ const ChatArea = () => {
     });
     console.log(user._id);
     socket.emit('send-message', msgFormData.message, user._id);
+    socket.emit('message-sent', user._id);
     setMsgFormData({ message: '' });
   }
 

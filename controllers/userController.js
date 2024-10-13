@@ -4,10 +4,17 @@ import { StatusCodes } from "http-status-codes";
 
 
 export const getAllUsers = async (req, res) => {
-  const data = await User.find();
-  const users = data.filter(user => user._id.toString() !== req.userId);
-  res.status(StatusCodes.OK).json(users);
-} 
+  try {
+    // Using find() with projection to exclude password
+    const data = await User.find({}, '-password'); 
+    const users = data.filter(user => user._id.toString() !== req.userId);
+
+    res.status(StatusCodes.OK).json(users);
+  } catch (error) {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Error fetching users" });
+  }
+}
+
 
 export const singleUser = async (req, res) => {
   const { id } = req.params;

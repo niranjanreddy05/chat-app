@@ -9,6 +9,9 @@ import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import User from '../components/User';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useEffect, useState } from 'react';
+import { useSocket } from '../components/SocketProvider';
+
 
 export const loader = async () => {
   try {
@@ -25,6 +28,97 @@ export const loader = async () => {
 
 const ChatLayout = () => {
   const data = useLoaderData();
+  console.log(data);
+  const { socket } = useSocket();
+  const [userData, setUserData] = useState([...data]);
+
+  const fetchUsers = async () => {
+    try {
+      const { data } = await axios.get('http://localhost:5100/api/users/all-users', {
+        withCredentials: true
+      });
+      const receiverId = localStorage.getItem('userId');
+      const updatedUserData = await Promise.all(data.map(async (user) => {
+        const { data: count } = await axios.post(
+          'http://localhost:5100/api/messages/get-unread-count',
+          { senderId: user._id, receiverId },
+          { withCredentials: true }
+        )
+        return { ...user, count}
+      }))
+      setUserData(updatedUserData);
+    } catch (error) {
+      toast.error(error?.response?.data?.msg);
+    }
+  };
+
+  useEffect(() => {
+    const loadUnreadCount = async () => {
+      const receiverId = localStorage.getItem('userId');
+      const updatedUserData = await Promise.all(userData.map(async (user) => {
+        const { data: count } = await axios.post(
+          'http://localhost:5100/api/messages/get-unread-count',
+          { senderId: user._id, receiverId },
+          { withCredentials: true }
+        )
+        return { ...user, count}
+      }))
+      setUserData(updatedUserData);
+    }
+
+    loadUnreadCount();
+  }, [data]);
+
+
+  useEffect(() => {
+    const handleMessageReceived = (socketId) => {
+      fetchUsers();
+      setTimeout(async () => {
+        try {
+          const { data: senderId } = await axios.post(
+            `http://localhost:5100/api/users/get-user-id`,
+            { id: socketId },
+            { withCredentials: true }
+          );
+
+          const receiverId = localStorage.getItem('userId');
+
+          const { data: count } = await axios.post(
+            'http://localhost:5100/api/messages/get-unread-count',
+            { senderId, receiverId },
+            { withCredentials: true }
+          );
+
+          setUserData(prevData => {
+            return prevData.map(user => {
+              if(user._id === senderId){
+                return {...user, count: count}
+              }
+              return user;
+            })
+          })
+        } catch (error) {
+          console.error("Error fetching unread message count: ", error);
+        }
+      }, 1500);
+    };
+    socket.on('message-received', handleMessageReceived);
+    return () => {
+      socket.off('message-received', handleMessageReceived);
+    };
+  }, [socket]);
+
+  const setCountToZero = (senderId) => {
+    setUserData(prevData => {
+      return prevData.map(user => {
+        if(user._id === senderId){
+          return {...user, count: 0}
+        }
+        return user;
+      })
+    })
+  }
+
   return (
     <Container fluid className="vh-100 p-0">
       <Row className="h-100 m-0">
@@ -48,9 +142,9 @@ const ChatLayout = () => {
             </InputGroup.Text>
           </InputGroup>
           <ul className="list-unstyled">
-            {data.map((user) => (
-              <User key={user._id} data={user} />
-            ))}
+            {userData.map((user) => {
+              return <User key={user._id} data={user} count={user.count} setCountToZero={setCountToZero} />
+            })}
           </ul>
         </Col>
 
