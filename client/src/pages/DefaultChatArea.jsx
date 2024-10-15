@@ -1,15 +1,28 @@
-import img from '../assets/select-user.svg';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 
 const DefaultChatArea = () => {
   return (
-    <Container fluid className="vh-100 d-flex justify-content-center align-items-center">
+    <Container fluid className="vh-100 d-flex justify-content-center align-items-center" style={{ backgroundColor: '#f8f9fa' }}>
       <Row className="text-center">
         <Col>
-          <img src={img} alt="Select User" style={{ maxWidth: '450px', marginBottom: '20px' }} />
-          <h4>Select a user to begin chatting</h4>
+          <div className="d-flex flex-column align-items-center">
+            <h4 className="mb-4" style={{ fontSize: '2rem', fontWeight: '600', color: '#495057' }}>
+              No conversation selected
+            </h4>
+            <p style={{ fontSize: '1.1rem', color: '#6c757d' }}>
+              Choose a user from the sidebar to start chatting
+            </p>
+
+            {/* Chat bubble animation */}
+            <div className="chat-bubble-container mt-4">
+              <div className="chat-bubble">💬</div>
+              <div className="typing-indicator">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+          </div>
         </Col>
       </Row>
     </Container>

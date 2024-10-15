@@ -10,7 +10,6 @@ import { SocketProvider } from './components/SocketProvider';
 
 
 
-import { loader as ChatsLoader } from './pages/ChatLayout'
 import { loader as ChatAreaLoader } from './pages/ChatArea';
 
 import { action as RegisterAction } from './pages/Register';
@@ -37,7 +36,6 @@ const router = createBrowserRouter([
         {
           path: 'chat',
           element: <ChatLayout />,
-          loader: ChatsLoader,
           children:
             [
               {
