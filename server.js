@@ -64,6 +64,18 @@ io.on('connection', (socket) => {
     const socketId = user.socketId;
     socket.to(socketId).emit('message-received', socket.id);
   })
+
+  socket.on('typing-started', async (userId) => {
+    const user = await User.findById(userId);
+    const socketId = user.socketId;
+    socket.to(socketId).emit('typing-ongoing', socket.id)
+  })
+
+  socket.on('typing-stopped', async (userId) => {
+    const user = await User.findById(userId);
+    const socketId = user.socketId;
+    socket.to(socketId).emit('typing-stopped', socket.id)
+  })
 })
 
 app.use('/api/auth', authRouter)

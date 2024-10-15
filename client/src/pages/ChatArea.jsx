@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -32,8 +32,27 @@ const ChatArea = () => {
   const { socket } = useSocket();
   const [msgFormData, setMsgFormData] = useState({ message: '' });
   const [msg, setMsg] = useState([]);
+  const [typing, setTyping] = useState(false);
+  const timeoutIdRef = useRef();
 
   useEffect(() => {
+    socket.on('typing-ongoing', async (socketId) => {
+      const userId = await axios.post(`http://localhost:5100/api/users/get-user-id`, { id: socketId }, {
+        withCredentials: true
+      });
+      if (user._id === userId.data) {
+        setTyping(true);
+      }
+    })
+
+    socket.on('typing-stopped', async (socketId) => {
+      const userId = await axios.post(`http://localhost:5100/api/users/get-user-id`, { id: socketId }, {
+        withCredentials: true
+      });
+      if (user._id === userId.data) {
+        setTyping(false);
+      }
+    })
     socket.on('receive-message', async (msg, msgId, socketId) => {
       const userId = await axios.post(`http://localhost:5100/api/users/get-user-id`, { id: socketId }, {
         withCredentials: true
@@ -47,6 +66,8 @@ const ChatArea = () => {
     });
     return () => {
       socket.off('receive-message');
+      socket.off('typing-stopped');
+      socket.off('typing-ongoing');
     };
   }, [user]);
 
@@ -58,14 +79,14 @@ const ChatArea = () => {
         withCredentials: true
       })
       data.map((msg) => {
-        if(msg.sender === senderId) {
+        if (msg.sender === senderId) {
           setMsg(prevData => {
-            return [...prevData, { text: msg.message, sender: true }]; 
+            return [...prevData, { text: msg.message, sender: true }];
           });
         } else {
           setMsg(prevData => {
             socket.emit('message-read', msg._id);
-            return [...prevData, { text: msg.message, sender: false }]; 
+            return [...prevData, { text: msg.message, sender: false }];
           });
         }
       })
@@ -85,6 +106,17 @@ const ChatArea = () => {
   }, [user._id]);
 
   function updateMsgForm(e) {
+    socket.emit('typing-started', user._id);
+
+    if (timeoutIdRef.current) {
+      clearTimeout(timeoutIdRef.current)
+      timeoutIdRef.current = null;
+    }
+
+    timeoutIdRef.current = setTimeout(() => {
+      socket.emit('typing-stopped', user._id);
+    }, 2000)
+
     setMsgFormData(prevData => {
       return { ...prevData, [e.target.name]: e.target.value };
     });
@@ -108,6 +140,7 @@ const ChatArea = () => {
       <Row className="bg-light border-bottom py-2 px-3 m-0">
         <Col>
           <h4 className="mb-0">{user?.username || "User"}</h4>
+          {typing && <p>Typing...</p>}
         </Col>
       </Row>
 

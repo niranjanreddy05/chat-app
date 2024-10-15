@@ -14,14 +14,6 @@ const DefaultChatArea = () => {
             <p style={{ fontSize: '1.1rem', color: '#6c757d' }}>
               Choose a user from the sidebar to start chatting
             </p>
-
-            {/* Chat bubble animation */}
-            <div className="chat-bubble-container mt-4">
-              <div className="chat-bubble">💬</div>
-              <div className="typing-indicator">
-                <span></span><span></span><span></span>
-              </div>
-            </div>
           </div>
         </Col>
       </Row>
