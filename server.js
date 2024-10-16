@@ -32,7 +32,9 @@ io.on('connection', (socket) => {
     try {
       const user = await User.findById(userId);
       user.socketId = socket.id;
+      user.isOnline = true
       await user.save();
+      socket.broadcast.emit('user-status-changed', { userId: user._id, isOnline: true })
     } catch (error) {
       throw new NotFoundError('User not found');
     }
@@ -76,6 +78,20 @@ io.on('connection', (socket) => {
     const socketId = user.socketId;
     socket.to(socketId).emit('typing-stopped', socket.id)
   })
+
+  socket.on('disconnect', async () => {
+    try {
+      const user = await User.findOne({ socketId: socket.id });
+      if (user) {
+        user.isOnline = false;
+        await user.save();
+        
+        socket.broadcast.emit('user-status-changed', { userId: user._id, isOnline: false });
+      }
+    } catch (error) {
+      console.error('Error finding user during disconnect:', error);
+    }
+  });
 })
 
 app.use('/api/auth', authRouter)

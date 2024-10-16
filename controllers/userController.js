@@ -31,3 +31,10 @@ export const getUserIdFromSocketId = async (req, res) => {
   const userId = user._id;
   res.status(StatusCodes.OK).json(userId);
 }
+
+export const getUserStatus = async (req, res) => {
+  const { id } = req.body;
+  const user = await User.findById(id);
+  const status = user.isOnline;
+  res.status(StatusCodes.OK).json(status);
+}

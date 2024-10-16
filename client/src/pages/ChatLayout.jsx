@@ -59,6 +59,10 @@ const ChatLayout = () => {
   }, []);
 
   useEffect(() => {
+    socket.emit('online');
+  }, [])
+
+  useEffect(() => {
     fetchProfile();
   })
 
@@ -88,6 +92,7 @@ const ChatLayout = () => {
   const logout = async () => {
     try {
       await axios.get('http://localhost:5100/api/auth/logout');
+      socket.disconnect();
       navigate('/login');
       toast.success('Logged out successfully');
     } catch(error) {

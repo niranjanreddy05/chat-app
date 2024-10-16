@@ -32,16 +32,26 @@ const ChatArea = () => {
   const { socket } = useSocket();
   const [msgFormData, setMsgFormData] = useState({ message: '' });
   const [msg, setMsg] = useState([]);
-  const [typing, setTyping] = useState(false);
-  const timeoutIdRef = useRef();
+  const [status, setStatus] = useState();
+  const typingIdRef = useRef();
 
   useEffect(() => {
+    socket.on('user-status-changed', (data) => {
+      const { userId, isOnline } = data;
+      if (user._id === userId) {
+        if (isOnline)
+          setStatus('Online');
+        else {
+          setStatus('Offline')
+        }
+      }
+    })
     socket.on('typing-ongoing', async (socketId) => {
       const userId = await axios.post(`http://localhost:5100/api/users/get-user-id`, { id: socketId }, {
         withCredentials: true
       });
       if (user._id === userId.data) {
-        setTyping(true);
+        setStatus('Typing...');
       }
     })
 
@@ -50,7 +60,14 @@ const ChatArea = () => {
         withCredentials: true
       });
       if (user._id === userId.data) {
-        setTyping(false);
+        const response = await axios.post('http://localhost:5100/api/users/get-user-status', { id: user._id }, {
+          withCredentials: true
+        })
+        if (response.data) {
+          setStatus('Online')
+        } else {
+          setStatus('Offline')
+        }
       }
     })
     socket.on('receive-message', async (msg, msgId, socketId) => {
@@ -68,6 +85,7 @@ const ChatArea = () => {
       socket.off('receive-message');
       socket.off('typing-stopped');
       socket.off('typing-ongoing');
+      socket.off('user-status-changed')
     };
   }, [user]);
 
@@ -96,6 +114,21 @@ const ChatArea = () => {
   }, [user._id])
 
   useEffect(() => {
+    const getStatus = async () => {
+      const response = await axios.post('http://localhost:5100/api/users/get-user-status', { id: user._id }, {
+        withCredentials: true
+      })
+      if (response.data) {
+        setStatus('Online')
+      } else {
+        setStatus('Offline')
+      }
+    }
+
+    getStatus();
+  }, [user])
+
+  useEffect(() => {
     const userId = localStorage.getItem('userId');
     socket.emit('login', userId);
   }, []);
@@ -108,14 +141,14 @@ const ChatArea = () => {
   function updateMsgForm(e) {
     socket.emit('typing-started', user._id);
 
-    if (timeoutIdRef.current) {
-      clearTimeout(timeoutIdRef.current)
-      timeoutIdRef.current = null;
+    if (typingIdRef.current) {
+      clearTimeout(typingIdRef.current)
+      typingIdRef.current = null;
     }
 
-    timeoutIdRef.current = setTimeout(() => {
+    typingIdRef.current = setTimeout(() => {
       socket.emit('typing-stopped', user._id);
-    }, 2000)
+    }, 1300)
 
     setMsgFormData(prevData => {
       return { ...prevData, [e.target.name]: e.target.value };
@@ -139,8 +172,31 @@ const ChatArea = () => {
       {/* Top Bar with User Info */}
       <Row className="bg-light border-bottom py-2 px-3 m-0">
         <Col>
-          <h4 className="mb-0">{user?.username || "User"}</h4>
-          {typing && <p>Typing...</p>}
+          <h4 className="mb-0">
+            {user?.username || "User"}
+          </h4>
+          {status && (
+              <p
+                style={{
+                  marginBottom: '0px',
+                  color: '#a6a6a6',
+                  fontSize: '15px',
+                }}
+              >
+                {status === 'Online' && <span
+                style={{
+                  display: 'inline-block',
+                  width: '10px',
+                  height: '10px',
+                  backgroundColor: 'green',
+                  borderRadius: '50%',
+                  marginRight: '5px',
+                  marginBottom: '0',
+                }}
+              ></span>}
+                {status}
+              </p>
+          )}
         </Col>
       </Row>
 
