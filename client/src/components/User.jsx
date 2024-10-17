@@ -38,7 +38,6 @@ const User = ({ data, count, setCountToZero }) => {
   };
 
   const [isHovered, setIsHovered] = useState(false);
-  console.log(count);
 
   return (
     <Link to={`/chat/user/${data._id}`} style={{ textDecoration: 'none', color: 'inherit' }} onClick={() => {

@@ -56,8 +56,11 @@ io.on('connection', (socket) => {
     }
   })
 
-  socket.on('message-read', async (msgId) => {
-    await Message.findByIdAndUpdate(msgId, { read: true });
+  socket.on('message-read', async (msgId, userId) => {
+    const user = await User.findById(userId);
+    const socketId = user.socketId;
+    const msg = await Message.findByIdAndUpdate(msgId, { read: true }, { new: true });
+    socket.to(socketId).emit('message-read-update', msg)
   })
 
   socket.on('message-sent', async (userId) => {
@@ -85,7 +88,7 @@ io.on('connection', (socket) => {
       if (user) {
         user.isOnline = false;
         await user.save();
-        
+
         socket.broadcast.emit('user-status-changed', { userId: user._id, isOnline: false });
       }
     } catch (error) {

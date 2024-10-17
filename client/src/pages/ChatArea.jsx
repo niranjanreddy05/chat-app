@@ -11,6 +11,7 @@ import { useLoaderData } from 'react-router-dom';
 import axios from 'axios';
 import { useSocket } from '../components/SocketProvider';
 import { toast } from 'react-toastify';
+import Message from '../components/Message';
 
 export const loader = async ({ params }) => {
   try {
@@ -76,16 +77,27 @@ const ChatArea = () => {
       });
       if (user._id === userId.data) {
         setMsg(prevData => {
-          socket.emit('message-read', msgId);
-          return [...prevData, { text: msg, sender: false }]; // Received message
+          console.log('receive message')
+
+          socket.emit('message-read', msgId, userId.data);
+          return [...prevData, { text: msg, sender: false, msgId: msgId }]; // Received message
         });
       }
     });
+
+    socket.on('message-read-update', (msgData) => {
+      setMsg(prevData => {
+        return prevData.map(oldMsg => {
+          return { ...oldMsg, read: true }
+        })
+      })
+    })
     return () => {
       socket.off('receive-message');
       socket.off('typing-stopped');
       socket.off('typing-ongoing');
-      socket.off('user-status-changed')
+      socket.off('user-status-changed');
+      socket.off('message-read-update');
     };
   }, [user]);
 
@@ -99,12 +111,14 @@ const ChatArea = () => {
       data.map((msg) => {
         if (msg.sender === senderId) {
           setMsg(prevData => {
-            return [...prevData, { text: msg.message, sender: true }];
+            return [...prevData, { text: msg.message, sender: true, read: msg.read, msgId: msg._id }];
           });
         } else {
           setMsg(prevData => {
-            socket.emit('message-read', msg._id);
-            return [...prevData, { text: msg.message, sender: false }];
+            if (msg.read === false) {
+              socket.emit('message-read', msg._id, user._id);
+            }
+            return [...prevData, { text: msg.message, sender: false, read: msg.read, msgId: msg._id }];
           });
         }
       })
@@ -161,7 +175,6 @@ const ChatArea = () => {
     setMsg(prevData => {
       return [...prevData, { text: msgFormData.message, sender: true }]; // Sent message
     });
-    console.log(user._id);
     socket.emit('send-message', msgFormData.message, user._id);
     socket.emit('message-sent', user._id);
     setMsgFormData({ message: '' });
@@ -176,14 +189,14 @@ const ChatArea = () => {
             {user?.username || "User"}
           </h4>
           {status && (
-              <p
-                style={{
-                  marginBottom: '0px',
-                  color: '#a6a6a6',
-                  fontSize: '15px',
-                }}
-              >
-                {status === 'Online' && <span
+            <p
+              style={{
+                marginBottom: '0px',
+                color: '#a6a6a6',
+                fontSize: '15px',
+              }}
+            >
+              {status === 'Online' && <span
                 style={{
                   display: 'inline-block',
                   width: '10px',
@@ -194,8 +207,8 @@ const ChatArea = () => {
                   marginBottom: '0',
                 }}
               ></span>}
-                {status}
-              </p>
+              {status}
+            </p>
           )}
         </Col>
       </Row>
@@ -203,36 +216,7 @@ const ChatArea = () => {
       {/* Chat Content Area */}
       <Row className="flex-grow-1 overflow-auto m-0" style={{ backgroundColor: '#f1f1f1' }}>
         <Col className="d-flex flex-column justify-content-end">
-          <div style={{ padding: '10px' }}>
-            {msg.length === 0 ? (
-              <p className="text-center text-muted">No messages yet...</p>
-            ) : (
-              msg.map((m, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: 'flex',
-                    justifyContent: m.sender ? 'flex-end' : 'flex-start',
-                    marginBottom: '10px',
-                  }}
-                >
-                  <div
-                    style={{
-                      padding: '10px 15px',
-                      maxWidth: '60%',
-                      borderRadius: '20px',
-                      backgroundColor: m.sender ? '#007bff' : '#e0e0e0',
-                      color: m.sender ? 'white' : 'black',
-                      fontSize: '1rem',
-                      wordWrap: 'break-word',
-                    }}
-                  >
-                    {m.text}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+          <Message msg={msg} />
         </Col>
       </Row>
 
