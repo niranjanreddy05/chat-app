@@ -30,19 +30,18 @@ export const action = async ({ request }) => {
 }
 
 const Login = () => {
-  const { socket, isConnected } = useSocket();
   const actionData = useActionData();
   const navigate = useNavigate();
 
   useEffect(() => {
     console.log(actionData?.user)
-    if (actionData?.user && isConnected) {
+    if (actionData?.user) {
       toast.success('Successfully Logged In');
       localStorage.setItem('userId', actionData.user._id)
-      socket.emit('login', actionData.user._id);
       navigate('/chat');
+      navigate(0);
     }
-  }, [actionData, navigate, isConnected]);
+  }, [actionData, navigate]);
 
   return (
     <Container className="d-flex justify-content-center align-items-center vh-100">

@@ -12,6 +12,8 @@ import axios from 'axios';
 import { useSocket } from '../components/SocketProvider';
 import { toast } from 'react-toastify';
 import Message from '../components/Message';
+import UserBar from '../components/UserBar';
+
 
 export const loader = async ({ params }) => {
   try {
@@ -85,7 +87,13 @@ const ChatArea = () => {
       }
     });
 
-    socket.on('message-read-update', (msgData) => {
+    socket.on('delete-messages', (senderId) => {
+      if (user._id === senderId) {
+        setMsg([])
+      }
+    })
+
+    socket.on('message-read-update', () => {
       setMsg(prevData => {
         return prevData.map(oldMsg => {
           return { ...oldMsg, read: true }
@@ -101,29 +109,40 @@ const ChatArea = () => {
     };
   }, [user]);
 
-  useEffect(() => {
-    const getMessages = async () => {
-      const senderId = localStorage.getItem('userId');
-      const receiverId = user._id;
-      const { data } = await axios.post('http://localhost:5100/api/messages/get-messages', { senderId, receiverId }, {
-        withCredentials: true
-      })
-      data.map((msg) => {
-        if (msg.sender === senderId) {
-          setMsg(prevData => {
-            return [...prevData, { text: msg.message, sender: true, read: msg.read, msgId: msg._id }];
-          });
-        } else {
-          setMsg(prevData => {
-            if (msg.read === false) {
-              socket.emit('message-read', msg._id, user._id);
-            }
-            return [...prevData, { text: msg.message, sender: false, read: msg.read, msgId: msg._id }];
-          });
-        }
-      })
-    }
+  const getMessages = async () => {
+    const senderId = localStorage.getItem('userId');
+    const receiverId = user._id;
+    const { data } = await axios.post('http://localhost:5100/api/messages/get-messages', { senderId, receiverId }, {
+      withCredentials: true
+    })
+    data.map((msg) => {
+      if (msg.sender === senderId) {
+        setMsg(prevData => {
+          return [...prevData, { text: msg.message, sender: true, read: msg.read, msgId: msg._id }];
+        });
+      } else {
+        setMsg(prevData => {
+          if (msg.read === false) {
+            socket.emit('message-read', msg._id, user._id);
+          }
+          return [...prevData, { text: msg.message, sender: false, read: msg.read, msgId: msg._id }];
+        });
+      }
+    })
+  }
 
+  const onClearChat = async () => {
+    const senderId = localStorage.getItem('userId');
+    const receiverId = user._id;
+    await axios.delete('http://localhost:5100/api/messages/delete-all-messages', {
+      data: { senderId, receiverId },
+      withCredentials: true
+    })
+    socket.emit('delete-messages', receiverId, senderId)
+    setMsg([])
+  }
+
+  useEffect(() => {
     getMessages();
   }, [user._id])
 
@@ -183,36 +202,7 @@ const ChatArea = () => {
   return (
     <Container fluid className="d-flex flex-column vh-100 p-0">
       {/* Top Bar with User Info */}
-      <Row className="bg-light border-bottom py-2 px-3 m-0">
-        <Col>
-          <h4 className="mb-0">
-            {user?.username || "User"}
-          </h4>
-          {status && (
-            <p
-              style={{
-                marginBottom: '0px',
-                color: '#a6a6a6',
-                fontSize: '15px',
-              }}
-            >
-              {status === 'Online' && <span
-                style={{
-                  display: 'inline-block',
-                  width: '10px',
-                  height: '10px',
-                  backgroundColor: 'green',
-                  borderRadius: '50%',
-                  marginRight: '5px',
-                  marginBottom: '0',
-                }}
-              ></span>}
-              {status}
-            </p>
-          )}
-        </Col>
-      </Row>
-
+      <UserBar user={user} status={status} onClearChat={onClearChat} />
       {/* Chat Content Area */}
       <Row className="flex-grow-1 overflow-auto m-0" style={{ backgroundColor: '#f1f1f1' }}>
         <Col className="d-flex flex-column justify-content-end">

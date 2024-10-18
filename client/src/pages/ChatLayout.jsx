@@ -59,8 +59,11 @@ const ChatLayout = () => {
   }, []);
 
   useEffect(() => {
-    socket.emit('online');
-  }, [])
+    if (isConnected) {
+      const userId = localStorage.getItem('userId');
+      socket.emit('login', userId);
+    }
+  }, [socket, isConnected])
 
   useEffect(() => {
     fetchProfile();
@@ -72,10 +75,13 @@ const ChatLayout = () => {
         fetchUsers();
       }, 1000);
     };
-    socket.on('message-received', handleMessageReceived);
-    return () => {
-      socket.off('message-received', handleMessageReceived);
-    };
+    if (socket && isConnected) {
+      socket.on('message-received', handleMessageReceived);
+      socket.on('delete-messages', handleMessageReceived);
+      return () => {
+        socket.off('message-received', handleMessageReceived);
+      };
+    }
   }, [socket, isConnected]);
 
   const setCountToZero = (senderId) => {
@@ -92,10 +98,12 @@ const ChatLayout = () => {
   const logout = async () => {
     try {
       await axios.get('http://localhost:5100/api/auth/logout');
-      socket.disconnect();
-      navigate('/login');
+      if (socket) {
+        socket.disconnect();
+      }
+      navigate('/login', { state: { key: 'ieajoiha' } });
       toast.success('Logged out successfully');
-    } catch(error) {
+    } catch (error) {
       toast.error('Error logging you out')
     }
   }

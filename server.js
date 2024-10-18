@@ -60,7 +60,7 @@ io.on('connection', (socket) => {
     const user = await User.findById(userId);
     const socketId = user.socketId;
     const msg = await Message.findByIdAndUpdate(msgId, { read: true }, { new: true });
-    socket.to(socketId).emit('message-read-update', msg)
+    socket.to(socketId).emit('message-read-update')
   })
 
   socket.on('message-sent', async (userId) => {
@@ -80,6 +80,12 @@ io.on('connection', (socket) => {
     const user = await User.findById(userId);
     const socketId = user.socketId;
     socket.to(socketId).emit('typing-stopped', socket.id)
+  })
+
+  socket.on('delete-messages', async (receiverId, senderId) => {
+    const user = await User.findById(receiverId);
+    const socketId = user.socketId;
+    socket.to(socketId).emit('delete-messages', senderId)
   })
 
   socket.on('disconnect', async () => {
