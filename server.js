@@ -52,7 +52,7 @@ io.on('connection', (socket) => {
       const result = await message.save();
       socket.to(user.socketId).emit('receive-message', msg, result._id, socket.id);
     } catch (error) {
-      console.log(error);
+      throw new Error('Something went wrong')
     }
   })
 

@@ -13,6 +13,7 @@ import { useSocket } from '../components/SocketProvider';
 import { toast } from 'react-toastify';
 import Message from '../components/Message';
 import UserBar from '../components/UserBar';
+import { useOutletContext } from 'react-router-dom';
 
 
 export const loader = async ({ params }) => {
@@ -37,6 +38,9 @@ const ChatArea = () => {
   const [msg, setMsg] = useState([]);
   const [status, setStatus] = useState();
   const typingIdRef = useRef();
+  const toggleSidebar = useOutletContext();
+
+  // toggleSidebar is not used anywhere below and the logic for unread messages when sidebar is active is yet to be implemented
 
   useEffect(() => {
     socket.on('user-status-changed', (data) => {
@@ -80,7 +84,7 @@ const ChatArea = () => {
       if (user._id === userId.data) {
         setMsg(prevData => {
           console.log('receive message')
-
+          console.log(toggleSidebar)
           socket.emit('message-read', msgId, userId.data);
           return [...prevData, { text: msg, sender: false, msgId: msgId }]; // Received message
         });
@@ -107,7 +111,7 @@ const ChatArea = () => {
       socket.off('user-status-changed');
       socket.off('message-read-update');
     };
-  }, [user]);
+  }, [user, toggleSidebar]);
 
   const getMessages = async () => {
     const senderId = localStorage.getItem('userId');
@@ -200,7 +204,7 @@ const ChatArea = () => {
   }
 
   return (
-    <Container fluid className="d-flex flex-column vh-100 p-0">
+    <Container className="d-flex flex-column vh-100 p-0 col-12">
       {/* Top Bar with User Info */}
       <UserBar user={user} status={status} onClearChat={onClearChat} />
       {/* Chat Content Area */}

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
-const User = ({ data, count, setCountToZero }) => {
+const User = ({ data, count, setCountToZero, updateSideBar }) => {
   const userContainerStyle = {
     backgroundColor: '#f0f0f0',
     borderRadius: '10px',
@@ -18,22 +18,22 @@ const User = ({ data, count, setCountToZero }) => {
     fontSize: '1.2rem',
     fontWeight: 'bold',
     margin: '0',
-    flex: 1, 
+    flex: 1,
   };
 
   const countStyle = {
     backgroundColor: '#007bff',
     color: 'white',
-    borderRadius: '50%', 
-    width: '25px', 
-    height: '25px', 
+    borderRadius: '50%',
+    width: '25px',
+    height: '25px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'absolute',
-    right: '10px', 
+    right: '10px',
     top: '50%',
-    transform: 'translateY(-50%)', 
+    transform: 'translateY(-50%)',
     fontSize: '0.9rem',
   };
 
@@ -41,7 +41,10 @@ const User = ({ data, count, setCountToZero }) => {
 
   return (
     <Link to={`/chat/user/${data._id}`} style={{ textDecoration: 'none', color: 'inherit' }} onClick={() => {
-      setCountToZero(data._id)
+      setCountToZero(data._id);
+      if (updateSideBar) {
+        updateSideBar();
+      }
     }}>
       <div
         style={{
@@ -51,8 +54,22 @@ const User = ({ data, count, setCountToZero }) => {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <p style={usernameStyle}>{data.username}</p>
-        { count > 0 && (
+        {data.isOnline && 
+            <span
+            style={{
+              display: 'inline-block',
+              width: '10px',
+              height: '10px',
+              backgroundColor: 'green',
+              borderRadius: '50%',
+              marginRight: '5px',
+              marginBottom: '0',
+            }}
+          ></span>
+          }
+        <p style={usernameStyle}>
+          {data.username}</p>
+        {count > 0 && (
           <div style={countStyle}>{count}</div>
         )}
       </div>
