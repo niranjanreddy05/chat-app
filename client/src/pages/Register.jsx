@@ -8,16 +8,16 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faLock } from '@fortawesome/free-solid-svg-icons';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import customFetch from '../../utils/customFetch.js';
 
 
 export const action = async ({ request }) => {
   try {
     const formData = await request.formData();
     const data = Object.fromEntries(formData);
-    await axios.post('http://localhost:5100/api/auth/register', data);
+    await customFetch.post('/auth/register', data);
     toast.success('Successfully Registered')
-    return redirect('/login');
+    return redirect('/');
   } catch (error) {
     console.log(error);
     toast.error(error?.response?.data?.msg);
@@ -72,7 +72,7 @@ const Register = () => {
         >
           Register
         </Button>
-        <p className='text-center mt-3'>Already have an account? <Link to={'/login'}>Login</Link></p>
+        <p className='text-center mt-3'>Already have an account? <Link to={'/'}>Login</Link></p>
       </RouterForm>
     </Container>
   );

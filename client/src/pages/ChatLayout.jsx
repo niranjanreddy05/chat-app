@@ -7,7 +7,7 @@ import InputGroup from 'react-bootstrap/InputGroup';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCommentDots, faTimes } from '@fortawesome/free-solid-svg-icons';
 import User from '../components/User';
-import axios from 'axios';
+import customFetch from '../../utils/customFetch.js';
 import { toast } from 'react-toastify';
 import { useEffect, useState } from 'react';
 import { useSocket } from '../components/SocketProvider';
@@ -29,15 +29,15 @@ const ChatLayout = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data } = await axios.get('http://localhost:5100/api/users/all-users', {
+      const { data } = await customFetch.get('/users/all-users', {
         withCredentials: true
       });
       const receiverId = localStorage.getItem('userId');
       setUsername(localStorage.getItem('username')); // Fetch and set logged-in username
 
       const updatedUserData = await Promise.all(data.map(async (user) => {
-        const { data: count } = await axios.post(
-          'http://localhost:5100/api/messages/get-unread-count',
+        const { data: count } = await customFetch.post(
+          '/messages/get-unread-count',
           { senderId: user._id, receiverId },
           { withCredentials: true }
         );
@@ -61,13 +61,13 @@ const ChatLayout = () => {
   const fetchProfile = async () => {
     try {
       const userId = localStorage.getItem('userId');
-      const { data } = await axios.get(`http://localhost:5100/api/users/single-user/${userId}`);
+      const { data } = await customFetch.get(`/users/single-user/${userId}`);
       const { username } = data;
       setUsername(username)
     } catch (error) {
       console.log(error);
       toast.error('Error fetching logged in user details');
-      navigate('/login');
+      navigate('/');
     }
   }
 
@@ -79,6 +79,7 @@ const ChatLayout = () => {
     if (isConnected) {
       const userId = localStorage.getItem('userId');
       socket.emit('login', userId);
+      console.log(socket)
     }
   }, [socket, isConnected])
 
@@ -128,11 +129,11 @@ const ChatLayout = () => {
 
   const logout = async () => {
     try {
-      await axios.get('http://localhost:5100/api/auth/logout');
+      await customFetch.get('/auth/logout');
       if (socket) {
         socket.disconnect();
       }
-      navigate('/login', { state: { key: 'ieajoiha' } });
+      navigate('/', { state: { key: 'ieajoiha' } });
       toast.success('Logged out successfully');
     } catch (error) {
       toast.error('Error logging you out')

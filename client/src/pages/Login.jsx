@@ -8,7 +8,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faLock } from '@fortawesome/free-solid-svg-icons';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import customFetch from '../../utils/customFetch.js';
 import { useSocket } from '../components/SocketProvider';
 import { useActionData, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
@@ -17,7 +17,7 @@ export const action = async ({ request }) => {
   try {
     const formData = await request.formData();
     const data = Object.fromEntries(formData);
-    const response = await axios.post('http://localhost:5100/api/auth/login', data, {
+    const response = await customFetch.post('/auth/login', data, {
       withCredentials: true
     })
     const user = response.data;

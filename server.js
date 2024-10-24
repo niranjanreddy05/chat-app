@@ -7,6 +7,8 @@ import { Server } from 'socket.io';
 import mongoose from 'mongoose';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { StatusCodes } from 'http-status-codes';
 import authRouter from './routers/authRouter.js'
 import userRouter from './routers/userRouter.js';
@@ -15,18 +17,41 @@ import User from './models/UserModel.js';
 import Message from './models/MessageModel.js';
 import { NotFoundError } from './errors/CustomErrors.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: ['http://localhost:5173', 'https://admin.socket.io'] } });
 
-app.use(cors({
-  origin: 'http://localhost:5173',
-  credentials: true
-}));
+
+const isDevelopment = process.env.NODE_ENV !== 'production';
+const clientOrigin = isDevelopment ? 'http://localhost:5173' : process.env.CLIENT_URL || '';
+
+
+const io = new Server(server, {
+  cors: {
+    origin: isDevelopment 
+      ? [clientOrigin, 'https://admin.socket.io']
+      : clientOrigin || true, // Allow same-origin requests in production
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
+});
+
+// Express CORS setup
+if (isDevelopment) {
+  app.use(cors({
+    origin: clientOrigin,
+    credentials: true
+  }));
+} else {
+  app.use(express.static(path.join(__dirname, './public')));
+}
+
 app.use(express.json());
 app.use(cookieParser());
 
+// Socket.IO event handlers
 io.on('connection', (socket) => {
   socket.on('login', async (userId) => {
     try {
@@ -103,26 +128,36 @@ io.on('connection', (socket) => {
   });
 })
 
-app.use('/api/auth', authRouter)
+// API routes
+app.use('/api/auth', authRouter);
 app.use('/api/users', userRouter);
 app.use('/api/messages', messageRouter);
 
-app.use('*', (req, res) => {
-  res.status(404).json({ msg: 'route not found' })
-})
+if (!isDevelopment) {
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, './public', 'index.html'));
+  });
+} else {
+  app.use('*', (req, res) => {
+    res.status(404).json({ msg: 'route not found' });
+  });
+}
 
+// Error handling middleware
 app.use((err, req, res, next) => {
   console.log(err);
   const statusCode = err.statusCode || StatusCodes.INTERNAL_SERVER_ERROR;
   const msg = err.message || 'Something went wrong, try again later';
-
   res.status(statusCode).json({ msg });
 });
 
 const port = process.env.PORT || 3000;
 try {
-  await mongoose.connect(process.env.MONGO_URL)
-  server.listen(port, console.log(`server is running on port ${port}...`))
+  await mongoose.connect(process.env.MONGO_URL);
+  server.listen(port, () => {
+    console.log(`Server is running on port ${port}...`);
+    console.log(`Mode: ${process.env.NODE_ENV || 'development'}`);
+  });
 } catch (err) {
   console.log(err);
   process.exit(1);

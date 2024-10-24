@@ -8,18 +8,18 @@ import InputGroup from 'react-bootstrap/InputGroup';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPaperPlane } from '@fortawesome/free-solid-svg-icons';
 import { useLoaderData } from 'react-router-dom';
-import axios from 'axios';
 import { useSocket } from '../components/SocketProvider';
 import { toast } from 'react-toastify';
 import Message from '../components/Message';
 import UserBar from '../components/UserBar';
 import { useOutletContext } from 'react-router-dom';
+import customFetch from '../../utils/customFetch.js';
 
 
 export const loader = async ({ params }) => {
   try {
     const { id } = params;
-    const { data } = await axios.get(`http://localhost:5100/api/users/single-user/${id}`, {
+    const { data } = await customFetch.get(`/users/single-user/${id}`, {
       withCredentials: true
     });
     return data;
@@ -27,7 +27,7 @@ export const loader = async ({ params }) => {
   catch (error) {
     console.log(error);
     toast.error(error?.response?.data?.msg);
-    return redirect('/login');
+    return redirect('/');
   }
 };
 
@@ -54,7 +54,7 @@ const ChatArea = () => {
       }
     })
     socket.on('typing-ongoing', async (socketId) => {
-      const userId = await axios.post(`http://localhost:5100/api/users/get-user-id`, { id: socketId }, {
+      const userId = await customFetch.post(`/users/get-user-id`, { id: socketId }, {
         withCredentials: true
       });
       if (user._id === userId.data) {
@@ -63,11 +63,11 @@ const ChatArea = () => {
     })
 
     socket.on('typing-stopped', async (socketId) => {
-      const userId = await axios.post(`http://localhost:5100/api/users/get-user-id`, { id: socketId }, {
+      const userId = await customFetch.post(`/users/get-user-id`, { id: socketId }, {
         withCredentials: true
       });
       if (user._id === userId.data) {
-        const response = await axios.post('http://localhost:5100/api/users/get-user-status', { id: user._id }, {
+        const response = await customFetch.post('/users/get-user-status', { id: user._id }, {
           withCredentials: true
         })
         if (response.data) {
@@ -78,7 +78,7 @@ const ChatArea = () => {
       }
     })
     socket.on('receive-message', async (msg, msgId, socketId) => {
-      const userId = await axios.post(`http://localhost:5100/api/users/get-user-id`, { id: socketId }, {
+      const userId = await customFetch.post(`/users/get-user-id`, { id: socketId }, {
         withCredentials: true
       });
       if (user._id === userId.data) {
@@ -116,7 +116,7 @@ const ChatArea = () => {
   const getMessages = async () => {
     const senderId = localStorage.getItem('userId');
     const receiverId = user._id;
-    const { data } = await axios.post('http://localhost:5100/api/messages/get-messages', { senderId, receiverId }, {
+    const { data } = await customFetch.post('/messages/get-messages', { senderId, receiverId }, {
       withCredentials: true
     })
     data.map((msg) => {
@@ -138,7 +138,7 @@ const ChatArea = () => {
   const onClearChat = async () => {
     const senderId = localStorage.getItem('userId');
     const receiverId = user._id;
-    await axios.delete('http://localhost:5100/api/messages/delete-all-messages', {
+    await customFetch.delete('/messages/delete-all-messages', {
       data: { senderId, receiverId },
       withCredentials: true
     })
@@ -152,7 +152,7 @@ const ChatArea = () => {
 
   useEffect(() => {
     const getStatus = async () => {
-      const response = await axios.post('http://localhost:5100/api/users/get-user-status', { id: user._id }, {
+      const response = await customFetch.post('/users/get-user-status', { id: user._id }, {
         withCredentials: true
       })
       if (response.data) {

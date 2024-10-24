@@ -31,12 +31,17 @@ export const getUnreadMessageCount = async (req, res) => {
 };
 
 export const deleteAllMessages = async (req, res) => {
-  const { senderId, receiverId } = req.body;
-  const result = await Message.deleteMany({
-    $or: [
-      { sender: senderId, receiver: receiverId },
-      { sender: receiverId, receiver: senderId }
-    ]
-  })
-  res.status(StatusCodes.OK).send(result);
+  try{
+    const { senderId, receiverId } = req.body;
+    const result = await Message.deleteMany({
+      $or: [
+        { sender: senderId, receiver: receiverId },
+        { sender: receiverId, receiver: senderId }
+      ]
+    })
+    res.status(StatusCodes.OK).send(result);
+  } catch (error) {
+    console.log(error);
+    throw new BadRequestError('Something went wrong')
+  }
 }
