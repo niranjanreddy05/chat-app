@@ -98,11 +98,29 @@ const ChatArea = () => {
       socket.off('receive-message');
       socket.off('typing-stopped');
       socket.off('typing-ongoing');
-      socket.off('user-status-changed');
       socket.off('message-read-update');
       socket.off('delete-messages');
     };
   }, [user, toggleSidebar]);
+
+  useEffect(() => {
+    const handleUserStatusChanged = (data) => {
+      const { userId, isOnline } = data;
+      if (user._id === userId) {
+        if (isOnline)
+          setStatus('Online');
+        else {
+          setStatus('Offline')
+        }
+      }
+    };
+
+    socket.on('user-status-changed', handleUserStatusChanged);
+
+    return () => {
+      socket.off('user-status-changed', handleUserStatusChanged);
+    };
+  }, [user._id, socket]);
 
   const getMessages = async () => {
     const senderId = localStorage.getItem('userId');
