@@ -90,7 +90,6 @@ io.on('connection', (socket) => {
 
   socket.on('message-sent', async (userId) => {
     const user = await User.findById(userId);
-    console.log(user);
     const socketId = user.socketId;
     socket.to(socketId).emit('message-received', socket.id);
   })
@@ -109,6 +108,12 @@ io.on('connection', (socket) => {
 
   socket.on('delete-messages', async (receiverId, senderId) => {
     const user = await User.findById(receiverId);
+    const result = await Message.deleteMany({
+      $or: [
+        { sender: senderId, receiver: receiverId },
+        { sender: receiverId, receiver: senderId }
+      ]
+    })
     const socketId = user.socketId;
     socket.to(socketId).emit('delete-messages', senderId)
   })

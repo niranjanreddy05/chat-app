@@ -43,16 +43,6 @@ const ChatArea = () => {
   // toggleSidebar is not used anywhere below and the logic for unread messages when sidebar is active is yet to be implemented
 
   useEffect(() => {
-    socket.on('user-status-changed', (data) => {
-      const { userId, isOnline } = data;
-      if (user._id === userId) {
-        if (isOnline)
-          setStatus('Online');
-        else {
-          setStatus('Offline')
-        }
-      }
-    })
     socket.on('typing-ongoing', async (socketId) => {
       const userId = await customFetch.post(`/users/get-user-id`, { id: socketId }, {
         withCredentials: true
@@ -110,6 +100,7 @@ const ChatArea = () => {
       socket.off('typing-ongoing');
       socket.off('user-status-changed');
       socket.off('message-read-update');
+      socket.off('delete-messages');
     };
   }, [user, toggleSidebar]);
 
@@ -138,10 +129,6 @@ const ChatArea = () => {
   const onClearChat = async () => {
     const senderId = localStorage.getItem('userId');
     const receiverId = user._id;
-    await customFetch.delete('/messages/delete-all-messages', {
-      data: { senderId, receiverId },
-      withCredentials: true
-    })
     socket.emit('delete-messages', receiverId, senderId)
     setMsg([])
   }

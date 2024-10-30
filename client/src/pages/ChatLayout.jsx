@@ -33,7 +33,7 @@ const ChatLayout = () => {
         withCredentials: true
       });
       const receiverId = localStorage.getItem('userId');
-      setUsername(localStorage.getItem('username')); // Fetch and set logged-in username
+      
 
       const updatedUserData = await Promise.all(data.map(async (user) => {
         const { data: count } = await customFetch.post(
@@ -75,17 +75,17 @@ const ChatLayout = () => {
     fetchUsers();
   }, []);
 
+
   useEffect(() => {
     if (isConnected) {
       const userId = localStorage.getItem('userId');
       socket.emit('login', userId);
-      console.log(socket)
     }
   }, [socket, isConnected])
 
   useEffect(() => {
     fetchProfile();
-  })
+  }, [])
 
   useEffect(() => {
     const handleMessageReceived = () => {
@@ -98,6 +98,7 @@ const ChatLayout = () => {
       socket.on('delete-messages', handleMessageReceived);
       return () => {
         socket.off('message-received', handleMessageReceived);
+        socket.off('delete-messages', handleMessageReceived);
       };
     }
   }, [socket, isConnected]);
@@ -115,7 +116,7 @@ const ChatLayout = () => {
 
   useEffect(() => {
     if (isConnected) {
-      socket.on('user-status-changed', () => {
+      socket.on('user-status-changed', (data) => {
         fetchUsers();
       })
     }
@@ -144,7 +145,7 @@ const ChatLayout = () => {
 
   useEffect(() => {
     setFilteredUsers(userData);
-  }, [userData]);
+  }, [userData, setUserData]);
 
 
   const updateSearch = (e) => {

@@ -8,7 +8,7 @@ export const SocketProvider = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    const newSocket = io();
+    const newSocket = io('http://localhost:5100');
 
     newSocket.on('connect', () => {
       setIsConnected(true);
