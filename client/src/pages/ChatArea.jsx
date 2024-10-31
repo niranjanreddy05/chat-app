@@ -81,11 +81,13 @@ const ChatArea = () => {
       }
     });
 
-    socket.on('delete-messages', (senderId) => {
+    const handleDeleteMessages = (senderId) => {
       if (user._id === senderId) {
         setMsg([])
       }
-    })
+    }
+
+    socket.on('delete-messages', handleDeleteMessages)
 
     socket.on('message-read-update', () => {
       setMsg(prevData => {
@@ -99,7 +101,7 @@ const ChatArea = () => {
       socket.off('typing-stopped');
       socket.off('typing-ongoing');
       socket.off('message-read-update');
-      socket.off('delete-messages');
+      socket.off('delete-messages', handleDeleteMessages);
     };
   }, [user, toggleSidebar]);
 

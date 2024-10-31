@@ -22,6 +22,7 @@ const ChatLayout = () => {
   const [searchData, setSearchData] = useState({ search: '' });
   const navigate = useNavigate();
 
+
   const updateSideBar = () => {
     setToggleSidebar(prevData => !prevData);
   }
@@ -115,15 +116,16 @@ const ChatLayout = () => {
   };
 
   useEffect(() => {
+    const updateUsers = () => {
+      fetchUsers();
+    }
     if (isConnected) {
-      socket.on('user-status-changed', (data) => {
-        fetchUsers();
-      })
+      socket.on('user-status-changed', updateUsers)
     }
 
     return () => {
       if (isConnected) {
-        socket.off('user-status-changed')
+        socket.off('user-status-changed', updateUsers)
       }
     }
   }, [socket, isConnected])
@@ -164,7 +166,10 @@ const ChatLayout = () => {
         <Col className='col-1 d-block d-sm-none bg-light'>
           <div style={{ height: '100vh' }}>
             <button
-              onClick={updateSideBar}
+              onClick={() => {
+                updateSideBar();
+                navigate('/chat');
+              }}
               style={{
                 position: 'relative',
                 background: 'none',
